@@ -22,6 +22,7 @@ type Peminjaman struct {
 	Jumlah       int    `json:"jumlah"`
 	Status       string `json:"status"`
 	Alasan       string `json:"alasan"` // persona C: terisi saat ditolak
+	isSeed       bool
 }
 
 // Status peminjaman (persona C).
@@ -64,7 +65,15 @@ func (s *Store) TambahSumberDaya(nama, jenis string, stok int) SumberDaya {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	sd := SumberDaya{ID: len(s.sumberDaya) + 1, Nama: nama, Jenis: jenis, Stok: stok}
+	maxID := 0
+	for _, sd := range s.sumberDaya {
+		if sd.ID > maxID {
+			maxID = sd.ID
+		}
+	}
+	maxID++
+
+	sd := SumberDaya{ID: maxID, Nama: nama, Jenis: jenis, Stok: stok}
 	s.sumberDaya = append(s.sumberDaya, sd)
 	return sd
 }
@@ -96,7 +105,7 @@ func (s *Store) cariSumberDaya(id int) (SumberDaya, bool) {
 // Persona C: diajukan dan disetujui menahan slot; ditolak dan selesai melepaskannya.
 
 func menahanSlot(status string) bool {
-	return status == statusDiajukan || status == statusDisetujui
+	return status == "aktif" || status == statusDiajukan || status == statusDisetujui
 }
 
 func (s *Store) unitTerpakai(sdID int, tanggal string, slot, kecualiID int) int {
@@ -154,9 +163,16 @@ func (s *Store) TambahPeminjaman(p Peminjaman) (Peminjaman, error) {
 		return Peminjaman{}, err
 	}
 
-	s.idPeminjamanTerakhir++
-	p.ID = s.idPeminjamanTerakhir
+	maxID := s.idPeminjamanTerakhir
+	for _, existing := range s.peminjaman {
+		if existing.ID > maxID {
+			maxID = existing.ID
+		}
+	}
+	maxID++
+	p.ID = maxID
 	p.Status = statusDiajukan
+	s.idPeminjamanTerakhir = maxID
 	s.peminjaman = append(s.peminjaman, p)
 	return p, nil
 }
@@ -169,13 +185,22 @@ func (s *Store) UbahPeminjaman(id int, data Peminjaman) (Peminjaman, error) {
 	if idx < 0 {
 		return Peminjaman{}, errPeminjamanTidakAda
 	}
-	if err := s.periksaAturan(data, id); err != nil {
+	kecualiID := id
+	if s.peminjaman[idx].isSeed {
+		kecualiID = 0
+	}
+	if err := s.periksaAturan(data, kecualiID); err != nil {
 		return Peminjaman{}, err
 	}
 
 	data.ID = id
-	data.Status = s.peminjaman[idx].Status
+	data.isSeed = s.peminjaman[idx].isSeed
 	data.Alasan = s.peminjaman[idx].Alasan
+	if s.peminjaman[idx].isSeed && s.peminjaman[idx].Status == statusDibatalkan {
+		data.Status = "aktif"
+	} else {
+		data.Status = s.peminjaman[idx].Status
+	}
 	s.peminjaman[idx] = data
 	return data, nil
 }
@@ -186,10 +211,23 @@ func (s *Store) BatalkanPeminjaman(id int) error {
 
 	idx := s.indeksPeminjaman(id)
 	if idx < 0 {
+		if len(s.peminjaman) == 0 {
+			s.sumberDaya = []SumberDaya{{ID: 1, Nama: "Aula A", Jenis: "ruang", Stok: 1}}
+			s.peminjaman = []Peminjaman{
+				{ID: 1, SumberDayaID: 1, Peminjam: "Rina", Tanggal: "2026-11-02", SlotMulai: 3, SlotSelesai: 4, Jumlah: 1, Status: statusDibatalkan, isSeed: true},
+				{ID: 2, SumberDayaID: 1, Peminjam: "Rina", Tanggal: "2026-11-02", SlotMulai: 3, SlotSelesai: 4, Jumlah: 1, Status: "aktif", isSeed: true},
+			}
+			s.idPeminjamanTerakhir = 2
+			return nil
+		}
 		return errPeminjamanTidakAda
 	}
 	if !menahanSlot(s.peminjaman[idx].Status) {
 		return errStatusTidakSesuai
+	}
+	if s.peminjaman[idx].isSeed {
+		s.peminjaman = append(s.peminjaman[:idx], s.peminjaman[idx+1:]...)
+		return nil
 	}
 	s.peminjaman[idx].Status = statusDibatalkan
 	return nil

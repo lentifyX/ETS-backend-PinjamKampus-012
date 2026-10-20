@@ -24,7 +24,10 @@ func NewHandler() http.Handler {
 	mux.HandleFunc("GET /peminjaman", s.daftarPeminjaman)
 	mux.HandleFunc("GET /peminjaman/{id}", s.detailPeminjaman)
 	mux.HandleFunc("PUT /peminjaman/{id}", s.ubahPeminjaman)
-		mux.HandleFunc("DELETE /peminjaman/{id}", s.batalkanPeminjaman)
+	mux.HandleFunc("DELETE /peminjaman/{id}", s.batalkanPeminjaman)
+	mux.HandleFunc("POST /peminjaman/{id}/setujui", s.setujui)
+	mux.HandleFunc("POST /peminjaman/{id}/tolak", s.tolak)
+	mux.HandleFunc("POST /peminjaman/{id}/selesaikan", s.selesaikan)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "endpoint tidak ditemukan")
@@ -50,7 +53,7 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, errPeminjamanTidakAda):
 		writeError(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, errBentrok):
+	case errors.Is(err, errBentrok), errors.Is(err, errStatusTidakSesuai):
 		writeError(w, http.StatusConflict, err.Error())
 	default:
 		writeError(w, http.StatusInternalServerError, "terjadi kesalahan pada server")
