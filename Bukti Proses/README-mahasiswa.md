@@ -1,7 +1,7 @@
 # PinjamKampus API
 
-- Nama dan NRP:
-- Persona:
+- Nama dan NRP: Valentino Mausal Sinaga NRP 5053241012
+- Persona: Admin Himpunan
 - Cara menjalankan: `go run .` lalu buka http://localhost:8080
 
 ## Fitur

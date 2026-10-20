@@ -1,7 +1,7 @@
 # PROSES
 
 ## 1. Persona dan masalahnya
-(2-3 kalimat dengan kata-katamu sendiri: siapa pengguna persona kamu, masalah apa yang diselesaikan fitur khasnya.)
+Pengguna persona saya adalah Admin Himpunan yang bertanggung jawab mengelola dan mengawasi penggunaan ruang himpunan agar tidak digunakan secara sembarangan. Masalah yang dihadapi adalah adanya peminjaman ruang yang langsung aktif tanpa pengawasan, sehingga fitur khas ini menyelesaikannya dengan menyediakan alur persetujuan (approval workflow) di mana setiap pengajuan berstatus awal "diajukan", serta mewajibkan persetujuan (peminjaman berstatus "disetujui") sebelum ruang terpakai atau penolakan berdisertai alasan mendasar.   
 
 ## 2. Rancangan struktur data
 (Tulis struct dan slice/map apa yang kamu simpan, dan kenapa dipilih begitu. Rancang ini sebelum menulis kode, lalu catat kalau berubah di tengah jalan.)
