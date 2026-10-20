@@ -24,7 +24,7 @@ func NewHandler() http.Handler {
 	mux.HandleFunc("GET /peminjaman", s.daftarPeminjaman)
 	mux.HandleFunc("GET /peminjaman/{id}", s.detailPeminjaman)
 	mux.HandleFunc("PUT /peminjaman/{id}", s.ubahPeminjaman)
-	mux.HandleFunc("DELETE /peminjaman/{id}", s.hapusPeminjaman)
+		mux.HandleFunc("DELETE /peminjaman/{id}", s.batalkanPeminjaman)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "endpoint tidak ditemukan")
@@ -203,13 +203,13 @@ func (s *server) ubahPeminjaman(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, p)
 }
 
-func (s *server) hapusPeminjaman(w http.ResponseWriter, r *http.Request) {
+func (s *server) batalkanPeminjaman(w http.ResponseWriter, r *http.Request) {
 	id, ok := idDariPath(w, r)
 	if !ok {
 		return
 	}
-	if !s.store.HapusPeminjaman(id) {
-		writeError(w, http.StatusNotFound, "peminjaman tidak ditemukan")
+	if err := s.store.BatalkanPeminjaman(id); err != nil {
+		writeStoreError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

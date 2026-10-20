@@ -30,6 +30,7 @@ const (
 	statusDisetujui = "disetujui"
 	statusDitolak   = "ditolak"
 	statusSelesai   = "selesai"
+	statusDibatalkan = "dibatalkan"
 )
 
 type filterPeminjaman struct {
@@ -179,16 +180,19 @@ func (s *Store) UbahPeminjaman(id int, data Peminjaman) (Peminjaman, error) {
 	return data, nil
 }
 
-func (s *Store) HapusPeminjaman(id int) bool {
+func (s *Store) BatalkanPeminjaman(id int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	idx := s.indeksPeminjaman(id)
 	if idx < 0 {
-		return false
+		return errPeminjamanTidakAda
 	}
-	s.peminjaman = append(s.peminjaman[:idx], s.peminjaman[idx+1:]...)
-	return true
+	if !menahanSlot(s.peminjaman[idx].Status) {
+		return errStatusTidakSesuai
+	}
+	s.peminjaman[idx].Status = statusDibatalkan
+	return nil
 }
 
 func (s *Store) DaftarPeminjaman(f filterPeminjaman) []Peminjaman {

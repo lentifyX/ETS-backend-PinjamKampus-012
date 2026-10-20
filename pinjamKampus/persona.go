@@ -27,6 +27,7 @@ func validasiAlasan(in tolakInput) (string, error) {
 	return alasan, nil
 }
 
+
 func (s *Store) UbahStatus(id int, dari, ke, alasan string) (Peminjaman, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -54,6 +55,8 @@ func (s *server) selesaikan(w http.ResponseWriter, r *http.Request) {
 	s.pindahStatus(w, r, statusDisetujui, statusSelesai)
 }
 
+// pindahStatus untuk aksi tanpa body: id bukan angka (400) -> tidak ada (404) -> status tidak sesuai (409).
+// 404 dan 409 keduanya datang dari UbahStatus.
 func (s *server) pindahStatus(w http.ResponseWriter, r *http.Request, dari, ke string) {
 	id, ok := idDariPath(w, r)
 	if !ok {
@@ -67,6 +70,7 @@ func (s *server) pindahStatus(w http.ResponseWriter, r *http.Request, dari, ke s
 	writeJSON(w, http.StatusOK, p)
 }
 
+// tolak: id bukan angka (400) -> tidak ada (404) -> body tidak valid (400) -> status tidak sesuai (409).
 func (s *server) tolak(w http.ResponseWriter, r *http.Request) {
 	id, ok := idDariPath(w, r)
 	if !ok {
